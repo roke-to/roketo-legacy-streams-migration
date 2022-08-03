@@ -472,12 +472,14 @@ async function createStreams(account, cacheFilename, tickersToContractIdsMap) {
     const comment = stream.description;
     const tokensPerSec = new BigNumber(stream.tokens_per_tick).multipliedBy(TICK_TO_S).toFixed(0);
 
+    const nearStreamCreationFee = nearAPI.utils.format.parseNearAmount('0.1');
+
     const actions = [
       nearAPI.transactions.functionCall(
         'ft_transfer_call',
         {
           receiver_id: CONFIG.roketoContractId,
-          amount: amountInYocto.toFixed(0),
+          amount: amountInYocto.plus(nearStreamCreationFee).toFixed(0),
           memo: 'Roketo transfer',
           msg: JSON.stringify({
             Create: {
@@ -502,8 +504,6 @@ async function createStreams(account, cacheFilename, tickersToContractIdsMap) {
     ];
 
     if (stream.ticker === 'NEAR') {
-      const nearStreamCreationFee = nearAPI.utils.format.parseNearAmount('0.1');
-
       actions.unshift(
         nearAPI.transactions.functionCall(
           'near_deposit',
