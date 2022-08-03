@@ -706,6 +706,14 @@ const main = async () => {
   await fillFinalWithdrawns(cacheFilename, legacyRoketoContract);
 
   await createStreams(account, cacheFilename, tickersToContractIdsMap);
+
+  try {
+    const cacheString = fs.readFileSync(cacheFilename, { encoding: 'utf-8' })
+    const cache = JSON.parse(cacheString);
+    if (Object.keys(cache).length === 0) {
+      fs.unlinkSync(cacheFilename);
+    }
+  } catch {}
 };
 
 main();
