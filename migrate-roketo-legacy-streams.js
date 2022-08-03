@@ -346,7 +346,7 @@ async function createStorageDeposits(account, accountIdTickerPairsSet) {
       async () => {
         try {
           await account.signAndSendTransaction({
-            receiverId: tokenContractId.contractId,
+            receiverId: tokenContractId,
             actions,
           });
 
