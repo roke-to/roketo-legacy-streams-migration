@@ -252,19 +252,21 @@ async function stopLegacyStreams(account, outgoingLegacyStreams, cacheFilename) 
     await retry(
       async () => {
         try {
-          const cache = (() => {
-            try {
-              const cacheString = fs.readFileSync(cacheFilename, { encoding: 'utf-8' })
-              return JSON.parse(cacheString);
-            } catch {
-              return {};
+          if (outgoingLegacyStream.status === 'ACTIVE') {
+            const cache = (() => {
+              try {
+                const cacheString = fs.readFileSync(cacheFilename, { encoding: 'utf-8' })
+                return JSON.parse(cacheString);
+              } catch {
+                return {};
+              }
+            })();
+            if (!cache[outgoingLegacyStream.id]?.stream) {
+              cache[outgoingLegacyStream.id] = {};
             }
-          })();
-          if (!cache[outgoingLegacyStream.id]?.stream) {
-            cache[outgoingLegacyStream.id] = {};
+            cache[outgoingLegacyStream.id].stream = outgoingLegacyStream;
+            fs.writeFileSync(cacheFilename, JSON.stringify(cache, null, 2));
           }
-          cache[outgoingLegacyStream.id].stream = outgoingLegacyStream;
-          fs.writeFileSync(cacheFilename, JSON.stringify(cache, null, 2));
 
           const finalExecutionOutcome = await account.signAndSendTransaction({
             receiverId: CONFIG.roketoLegacyContractId,
