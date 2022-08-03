@@ -246,7 +246,7 @@ async function stopLegacyStreams(account, outgoingLegacyStreams, cacheFilename) 
         stream_id: outgoingLegacyStream.id,
       },
       '100000000000000',
-      1000000000000000000000,
+      '1000000000000000000000',
     );
 
     await retry(
