@@ -310,6 +310,7 @@ async function stopLegacyStreams(account, outgoingLegacyStreams, cacheFilename) 
     console.log(chalk.red`The script failed to stop ${failedStreamsCount}/${outgoingLegacyStreams.length} legacy streams.`);
     console.log(chalk.red`Please try running the script with the same parameters again, continuing from the previous state.`);
     console.log(chalk.red`If the error persists, contact developers from README.md.`);
+    process.exit(1);
   } else {
     console.log(chalk.green`✔️ All legacy streams were stopped.`);
   }
