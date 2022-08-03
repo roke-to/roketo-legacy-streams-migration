@@ -590,7 +590,11 @@ async function fillFinalWithdrawns(cacheFilename, legacyRoketoContract) {
         return {};
       }
     })();
-    cache[id].finalTokensWithdrawn = tokens_total_withdrawn;
+    if (new BigNumber(cache[id].stream.balance).plus(cache[id].stream.tokens_total_withdrawn).minus(tokens_total_withdrawn).isZero()) {
+      delete cache[id];
+    } else {
+      cache[id].finalTokensWithdrawn = tokens_total_withdrawn;
+    }
     fs.writeFileSync(cacheFilename, JSON.stringify(cache, null, 2));
   });
 }
