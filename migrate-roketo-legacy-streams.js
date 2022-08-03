@@ -289,7 +289,7 @@ async function stopLegacyStreams(account, outgoingLegacyStreams, cacheFilename) 
             throw new Error('Try again');
           } else {
             console.log(chalk.red`signAndSignTransaction error`);
-            console.log(chalk.red(err));
+            console.error(err);
 
             failedStreamsCount += 1;
 
@@ -320,7 +320,7 @@ async function createStorageDeposits(account, accountIdTickerPairsSet) {
     return;
   }
 
-  console.log(chalk.cyan`Registering actors  legacy streams...`);
+  console.log(chalk.cyan`Registering actors legacy streams...`);
 
   const bar = new cliProgress.MultiBar({
     stopOnComplete: true,
@@ -360,7 +360,7 @@ async function createStorageDeposits(account, accountIdTickerPairsSet) {
             throw new Error('Try again');
           } else {
             console.log(chalk.red`signAndSignTransaction error`);
-            console.log(chalk.red(err));
+            console.error(err);
             console.log(chalk.red`Please try running the script with the same parameters again, continuing from the previous state.`);
             console.log(chalk.red`If the error persists, contact developers from README.md.`);
             process.exit(1);
@@ -540,7 +540,7 @@ async function createStreams(account, cacheFilename, tickersToContractIdsMap) {
             throw new Error('Try again');
           } else {
             console.log(chalk.red`signAndSignTransaction error`);
-            console.log(chalk.red(err));
+            console.error(err);
 
             failedStreamsCount += 1;
 
