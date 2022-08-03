@@ -227,7 +227,6 @@ async function stopLegacyStreams(account, outgoingLegacyStreams, cacheFilename) 
   }
 
   console.log(chalk.cyan`Stopping legacy streams...`);
-  console.log('outgoingLegacyStreams', outgoingLegacyStreams);
 
   const bar = new cliProgress.MultiBar({
     stopOnComplete: true,
