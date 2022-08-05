@@ -383,6 +383,46 @@ async function createStorageDeposits(account, accountIdTickerPairsSet) {
   console.log(chalk.green`✔️ All needed FT storages were created.`);
 }
 
+async function withdrawAll(account) {
+  console.log(chalk.cyan`Withdrawing all the valuables...`);
+
+  await retry(
+    async () => {
+      try {
+        await account.signAndSendTransaction({
+          receiverId: CONFIG.roketoLegacyContractId,
+          actions: [
+            nearAPI.transactions.functionCall(
+              'update_account',
+              { account_id: account.accountId },
+              '200000000000000',
+              nearAPI.utils.format.parseNearAmount('0.001'),
+            )
+          ],
+        });
+      } catch (err) {
+        if (
+          err.message === 'Transaction has expired' ||
+          err.message.includes(`GatewayTimeoutError`) ||
+          err.message.includes(`Please try again`)
+        ) {
+          throw new Error('Try again');
+        } else {
+          console.log(chalk.red`signAndSignTransaction error`);
+          console.error(err);
+        }
+      }
+    },
+    {
+      retries: 10,
+      minTimeout: 500,
+      maxTimeout: 1500,
+    }
+  );
+
+  console.log(chalk.green`✔️ Withdrawn all the valuables.`);
+}
+
 async function createStreams(account, cacheFilename, tickersToContractIdsMap) {
   const cacheForKeys = (() => {
     try {
@@ -715,6 +755,8 @@ const main = async () => {
   await stopLegacyStreams(account, outgoingLegacyStreams, cacheFilename);
 
   await fillFinalWithdrawns(cacheFilename, legacyRoketoContract);
+
+  await withdrawAll(account, legacyRoketoContract);
 
   await createStreams(account, cacheFilename, tickersToContractIdsMap);
 
