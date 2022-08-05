@@ -339,7 +339,10 @@ async function createStorageDeposits(account, accountIdTickerPairsSet) {
 
     const actions = [nearAPI.transactions.functionCall(
       'storage_deposit',
-      { account_id: actorId },
+      {
+        account_id: actorId,
+        registration_only: true,
+      },
       '30000000000000',
       depositAmount,
     )];
