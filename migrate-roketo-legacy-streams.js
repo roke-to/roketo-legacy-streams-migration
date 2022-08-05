@@ -481,7 +481,9 @@ async function createStreams(account, cacheFilename, tickersToContractIdsMap) {
         'ft_transfer_call',
         {
           receiver_id: CONFIG.roketoContractId,
-          amount: amountInYocto.plus(nearStreamCreationFee).toFixed(0),
+          amount: stream.ticker === 'NEAR'
+            ? amountInYocto.plus(nearStreamCreationFee).toFixed(0)
+            : amountInYocto.toFixed(0),
           memo: 'Roketo transfer',
           msg: JSON.stringify({
             Create: {
