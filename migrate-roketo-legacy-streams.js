@@ -183,9 +183,11 @@ async function checkIfEnoughNEARs(account, storagelessAccountIdTickerPairsSet, a
   const withdrawFeeNear = nearAPI.utils.format.parseNearAmount('0.001');
   const operationalFeeNear = streamsStopFeeNear.plus(withdrawFeeNear);
 
-  const totalFeeNear = ftStorageRegistrationFeeNear.plus(nearStreamsFeeNear).plus(streamsStopFeeNear).plus(withdrawFeeNear);
+  const reservedForGas = nearAPI.utils.format.parseNearAmount('0.25');
 
-  console.log(chalk.cyan`[!] Required total available balance: ${nearAPI.utils.format.formatNearAmount(totalFeeNear.toFixed(0), 5)} NEAR (plus gas).`);
+  const totalFeeNear = ftStorageRegistrationFeeNear.plus(nearStreamsFeeNear).plus(streamsStopFeeNear).plus(withdrawFeeNear).plus(reservedForGas);
+
+  console.log(chalk.cyan`[!] Required total available balance: ${nearAPI.utils.format.formatNearAmount(totalFeeNear.toFixed(0), 5)} NEAR (including reserve for gas usage).`);
 
   if (ftStorageRegistrationFeeNear.isGreaterThan(0)) {
     console.log(chalk.cyan`[!] ${nearAPI.utils.format.formatNearAmount(ftStorageRegistrationFeeNear.toFixed(0), 5)} NEAR for covering FT storage registrations.`);
