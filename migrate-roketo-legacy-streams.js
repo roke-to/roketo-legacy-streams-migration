@@ -747,7 +747,15 @@ const main = async () => {
 
   await fillFinalWithdrawns(cacheFilename, legacyRoketoContract);
 
-  await withdrawAll(account, legacyRoketoContract);
+  const needsWithdrawal = await (async () => {
+    const roketoAccount = await legacyRoketoContract.get_account({ account_id: account.accountId });
+
+    return roketoAccount.ready_to_withdraw.some(([, sum]) => sum !== '0');
+  })();
+
+  if (needsWithdrawal) {
+    await withdrawAll(account, legacyRoketoContract);
+  }
 
   await createStreams(account, cacheFilename, tickersToContractIdsMap);
 
