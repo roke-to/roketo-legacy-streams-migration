@@ -60,6 +60,9 @@ const CONFIG = (() => {
   return configs[options.network];
 })();
 
+const LEGACY_ROKETO_WITHDRAWAL_FEE_PART = new BigNumber('0.001');
+const WITHDRAWN_PART = new BigNumber(1).minus(LEGACY_ROKETO_WITHDRAWAL_FEE_PART);
+
 function getNearInstance() {
   const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(
     `${process.env.HOME}/.near-credentials/`
@@ -412,66 +415,6 @@ async function withdrawAll(account) {
 }
 
 async function createStreams(account, cacheFilename, tickersToContractIdsMap) {
-  const cacheForKeys = (() => {
-    try {
-      const cacheString = fs.readFileSync(cacheFilename, { encoding: 'utf-8' })
-      return JSON.parse(cacheString);
-    } catch {
-      return {};
-    }
-  })();
-
-  const streamsReceiverSpeedBalancesMap = Object.values(cacheForKeys).reduce(
-    (acc, { stream, finalTokensWithdrawn }) => Object.assign(acc, {
-      [`${
-        stream.receiver_id
-      }|${
-        new BigNumber(stream.tokens_per_tick).multipliedBy(TICK_TO_S).toFixed(0)
-      }|${
-        new BigNumber(stream.balance).plus(stream.tokens_total_withdrawn).minus(finalTokensWithdrawn).toFixed(0)
-      }`]: stream.id,
-    }),
-    {}
-  );
-
-  const { roketoContractId } = CONFIG;
-  const roketoContract = new nearAPI.Contract(account, roketoContractId, {
-    viewMethods: ['get_account_outgoing_streams'],
-    changeMethods: [],
-  });
-
-  const streams = await (async () => {
-    try {
-      return await roketoContract.get_account_outgoing_streams({ account_id: account.accountId, from: 0, limit: 99999 });
-    } catch {
-      console.log(chalk.red`Failed to get streams of ${account.accountId}. Please contact script developers. Aborting...`);
-      process.exit(1);
-    }
-  })();
-
-  streams.forEach(({ receiver_id, tokens_per_sec, balance, tokens_total_withdrawn }) => {
-    const key = `${
-      receiver_id
-    }|${
-      tokens_per_sec
-    }|${
-      new BigNumber(balance).plus(tokens_total_withdrawn).toFixed(0)
-    }`;
-
-    if (key in streamsReceiverSpeedBalancesMap) {
-      const cache = (() => {
-        try {
-          const cacheString = fs.readFileSync(cacheFilename, { encoding: 'utf-8' })
-          return JSON.parse(cacheString);
-        } catch {
-          return {};
-        }
-      })();
-      delete cache[streamsReceiverSpeedBalancesMap[key]];
-      fs.writeFileSync(cacheFilename, JSON.stringify(cache, null, 2));
-    }
-  });
-
   const cache = (() => {
     try {
       const cacheString = fs.readFileSync(cacheFilename, { encoding: 'utf-8' })
@@ -498,9 +441,6 @@ async function createStreams(account, cacheFilename, tickersToContractIdsMap) {
   }).create(totalToCreate, 0);
 
   let failedStreamsCount = 0;
-
-  const LEGACY_ROKETO_WITHDRAWAL_FEE_PART = new BigNumber('0.001');
-  const WITHDRAWN_PART = new BigNumber(1).minus(LEGACY_ROKETO_WITHDRAWAL_FEE_PART);
 
   await Promise.all(Object.values(cache).map(async ({ stream, finalTokensWithdrawn }) => {
     const amountInYocto = new BigNumber(stream.balance).plus(stream.tokens_total_withdrawn).minus(finalTokensWithdrawn).multipliedBy(WITHDRAWN_PART);
@@ -670,6 +610,62 @@ const main = async () => {
       return {};
     }
   })();
+
+  const streamsReceiverSpeedBalancesMap = Object.values(nonRecreatedStreamsCache).reduce(
+    (acc, { stream, finalTokensWithdrawn }) => finalTokensWithdrawn
+      ? Object.assign(acc, {
+        [`${
+          stream.receiver_id
+        }|${
+          new BigNumber(stream.tokens_per_tick).multipliedBy(TICK_TO_S).toFixed(0)
+        }|${
+          new BigNumber(stream.balance).plus(stream.tokens_total_withdrawn).minus(finalTokensWithdrawn).multipliedBy(WITHDRAWN_PART).toFixed(0)
+        }`]: stream.id,
+      })
+      : acc,
+    {}
+  );
+
+  const { roketoContractId } = CONFIG;
+  const roketoContract = new nearAPI.Contract(account, roketoContractId, {
+    viewMethods: ['get_account_outgoing_streams'],
+    changeMethods: [],
+  });
+
+  const streams = await (async () => {
+    try {
+      return await roketoContract.get_account_outgoing_streams({ account_id: account.accountId, from: 0, limit: 99999 });
+    } catch {
+      console.log(chalk.red`Failed to get streams of ${account.accountId}. Please contact script developers. Aborting...`);
+      process.exit(1);
+    }
+  })();
+
+  streams.forEach(({ receiver_id, tokens_per_sec, balance, tokens_total_withdrawn }) => {
+    const key = `${
+      receiver_id
+    }|${
+      tokens_per_sec
+    }|${
+      new BigNumber(balance).plus(tokens_total_withdrawn).toFixed(0)
+    }`;
+
+    if (key in streamsReceiverSpeedBalancesMap) {
+      const cache = (() => {
+        try {
+          const cacheString = fs.readFileSync(cacheFilename, { encoding: 'utf-8' })
+          return JSON.parse(cacheString);
+        } catch {
+          return {};
+        }
+      })();
+      delete cache[streamsReceiverSpeedBalancesMap[key]];
+      fs.writeFileSync(cacheFilename, JSON.stringify(cache, null, 2));
+
+      delete nonRecreatedStreamsCache[streamsReceiverSpeedBalancesMap[key]];
+    }
+  });
+
   const nonRecreatedStreams = Object.values(nonRecreatedStreamsCache).map(({ stream }) => stream);
   const nonRecreatedStreamsLength = Object.keys(nonRecreatedStreamsCache).length;
 
