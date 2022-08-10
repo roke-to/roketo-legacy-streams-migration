@@ -529,7 +529,7 @@ async function createStreams(account, cacheFilename, tickersToContractIdsMap) {
                 is_auto_start_enabled: true,
                 ...comment && {
                   description: JSON.stringify({
-                    c: comment,
+                    c: comment.length > 80 ? `${comment.slice(0, 77)}...` : comment,
                   }),
                 },
               },
