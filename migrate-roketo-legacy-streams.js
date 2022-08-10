@@ -167,58 +167,46 @@ async function getStoragelessAccountIdTickerPairsSet(allActorTickerPairsSet, acc
 }
 
 async function checkIfEnoughNEARs(account, storagelessAccountIdTickerPairsSet, allStreamsCount, nearStreamsCount) {
-  if (storagelessAccountIdTickerPairsSet.size === 0) {
-    return;
-  }
+  const { amount, storage_usage } = await account.state();
+  const reservedForTxs = nearAPI.utils.format.parseNearAmount('0.05');
 
-  const accountState = await account.state();
+  const availableBalance = new BigNumber(amount).minus(new BigNumber(storage_usage).multipliedBy(1e19)).minus(reservedForTxs);
 
   const ftStorageRegistrationFeeNear = new BigNumber(storagelessAccountIdTickerPairsSet.size).multipliedBy(nearAPI.utils.format.parseNearAmount('0.00125'));
+
   const nearStreamsFeeNear = new BigNumber(nearStreamsCount).multipliedBy(nearAPI.utils.format.parseNearAmount('0.1'));
+
   const streamsStopFeeNear = new BigNumber(allStreamsCount).multipliedBy(nearAPI.utils.format.parseNearAmount('0.001'));
+  const withdrawFeeNear = nearAPI.utils.format.parseNearAmount('0.001');
+  const operationalFeeNear = streamsStopFeeNear.plus(withdrawFeeNear);
 
-  const totalFeeNear = ftStorageRegistrationFeeNear.plus(nearStreamsFeeNear).plus(streamsStopFeeNear);
+  const totalFeeNear = ftStorageRegistrationFeeNear.plus(nearStreamsFeeNear).plus(streamsStopFeeNear).plus(withdrawFeeNear);
 
-  if (totalFeeNear.isGreaterThan(accountState.amount)) {
-    const accountNearBalance = nearAPI.utils.format.parseNearAmount(accountState.amount);
-    const diff = nearAPI.utils.format.parseNearAmount(ftStorageRegistrationFeeNear.toFixed());
+  console.log(chalk.cyan`[!] Required total available balance: ${nearAPI.utils.format.formatNearAmount(totalFeeNear.toFixed(0), 5)} NEAR (plus gas).`);
 
+  if (ftStorageRegistrationFeeNear.isGreaterThan(0)) {
+    console.log(chalk.cyan`[!] ${nearAPI.utils.format.formatNearAmount(ftStorageRegistrationFeeNear.toFixed(0), 5)} NEAR for covering FT storage registrations.`);
+  }
+
+  console.log(chalk.cyan`[!] ${nearAPI.utils.format.formatNearAmount(operationalFeeNear.toFixed(0), 5)} NEAR for covering operational costs for stopping streams and withdrawal.`);
+
+  if (nearStreamsFeeNear.isGreaterThan(0)) {
+    console.log(chalk.cyan`[!] ${nearAPI.utils.format.formatNearAmount(nearStreamsFeeNear.toFixed(0), 5)} NEAR for Roketo stream creation fees.`);
+  }
+
+  console.log(chalk.cyan`\n[!] Current available balance: ${nearAPI.utils.format.formatNearAmount(availableBalance.toFixed(0), 5)} NEAR.`);
+
+  if (totalFeeNear.isGreaterThan(availableBalance)) {
     console.log(chalk.red([
       `Not enough NEARs on ${account.accountId} account for proceeding.`,
-      `Current balance: ${accountNearBalance} NEAR.`,
-      `Required total balance: ${totalFeeNear.toFixed()} NEAR.`,
-    ].join('\n')));
-
-    if (ftStorageRegistrationFeeNear.isGreaterThan(0)) {
-      console.log(chalk.red`${ftStorageRegistrationFeeNear.toFixed()} NEAR for covering FT storage registration.`);
-    }
-
-    if (streamsStopFeeNear.isGreaterThan(0)) {
-      console.log(chalk.red`${streamsStopFeeNear.toFixed()} NEAR for covering operational costs for stopping streams.`);
-    }
-
-    if (nearStreamsFeeNear.isGreaterThan(0)) {
-      console.log(chalk.red`${nearStreamsFeeNear.toFixed()} NEAR for roketo fees.`);
-    }
-
-    console.log(chalk.red([
-      `Please add ${diff} more NEAR to ${account.accountId} before proceeding.`,
+      `Please add ${nearAPI.utils.format.formatNearAmount(totalFeeNear.minus(availableBalance).toFixed(0), 5)} more NEAR to the account before proceeding.`,
       `Aborting...`,
     ].join('\n')));
 
     process.exit(1);
   }
 
-  if (totalFeeNear.isGreaterThan(0)) {
-    if (ftStorageRegistrationFeeNear.isGreaterThan(0)) {
-      console.log(chalk.magenta`[!]️ ${nearAPI.utils.format.formatNearAmount(ftStorageRegistrationFeeNear.toFixed())} NEARs will be spent on FT storage registration.`);
-    }
-
-    if (nearStreamsFeeNear.isGreaterThan(0)) {
-      console.log(chalk.magenta`[!]️ ${nearAPI.utils.format.formatNearAmount(nearStreamsFeeNear.toFixed())} NEARs will be spent on Roketo fees.`);
-    }
-    console.log(chalk.green`✔️ There're enough NEARs on ${account.accountId} for proceeding.`);
-  }
+  console.log(chalk.green`✔️ There're enough NEARs on ${account.accountId} for proceeding.`);
 }
 
 async function stopLegacyStreams(account, outgoingLegacyStreams, cacheFilename) {
