@@ -499,8 +499,11 @@ async function createStreams(account, cacheFilename, tickersToContractIdsMap) {
 
   let failedStreamsCount = 0;
 
+  const LEGACY_ROKETO_WITHDRAWAL_FEE_PART = new BigNumber('0.001');
+  const WITHDRAWN_PART = new BigNumber(1).minus(LEGACY_ROKETO_WITHDRAWAL_FEE_PART);
+
   await Promise.all(Object.values(cache).map(async ({ stream, finalTokensWithdrawn }) => {
-    const amountInYocto = new BigNumber(stream.balance).plus(stream.tokens_total_withdrawn).minus(finalTokensWithdrawn);
+    const amountInYocto = new BigNumber(stream.balance).plus(stream.tokens_total_withdrawn).minus(finalTokensWithdrawn).multipliedBy(WITHDRAWN_PART);
 
     const comment = stream.description;
     const tokensPerSec = new BigNumber(stream.tokens_per_tick).multipliedBy(TICK_TO_S).toFixed(0);
