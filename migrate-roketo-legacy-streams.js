@@ -676,7 +676,7 @@ const main = async () => {
   console.log(chalk.cyan`Fetching legacy streams info...`);
   const legacyStreams = await Promise.all(legacyStreamsIds.map((legacyStreamsId) => legacyRoketoContract.get_stream({ stream_id: legacyStreamsId })));
 
-  const outgoingLegacyStreams = legacyStreams.filter(({ owner_id, status }) =>
+  const outgoingLegacyStreams = legacyStreams.filter(Boolean).filter(({ owner_id, status }) =>
     owner_id === account.accountId && (status === 'ACTIVE' || status === 'PAUSED' || status === 'INITIALIZED')
   );
 
