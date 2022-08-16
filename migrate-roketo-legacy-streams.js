@@ -175,7 +175,7 @@ async function checkIfEnoughNEARs(account, storagelessAccountIdTickerPairsSet, a
 
   const availableBalance = new BigNumber(amount).minus(new BigNumber(storage_usage).multipliedBy(1e19)).minus(reservedForTxs);
 
-  const ftStorageRegistrationFeeNear = new BigNumber(storagelessAccountIdTickerPairsSet.size).multipliedBy(nearAPI.utils.format.parseNearAmount('0.00125'));
+  const ftStorageRegistrationFeeNear = new BigNumber(storagelessAccountIdTickerPairsSet.size).multipliedBy(nearAPI.utils.format.parseNearAmount('0.0125'));
 
   const nearStreamsFeeNear = new BigNumber(nearStreamsCount).multipliedBy(nearAPI.utils.format.parseNearAmount('0.1'));
 
@@ -190,7 +190,7 @@ async function checkIfEnoughNEARs(account, storagelessAccountIdTickerPairsSet, a
   console.log(chalk.cyan`[!] Required total available balance: ${nearAPI.utils.format.formatNearAmount(totalFeeNear.toFixed(0), 5)} NEAR (including reserve for gas usage).`);
 
   if (ftStorageRegistrationFeeNear.isGreaterThan(0)) {
-    console.log(chalk.cyan`[!] ${nearAPI.utils.format.formatNearAmount(ftStorageRegistrationFeeNear.toFixed(0), 5)} NEAR for covering FT storage registrations.`);
+    console.log(chalk.cyan`[!] Up to ${nearAPI.utils.format.formatNearAmount(ftStorageRegistrationFeeNear.toFixed(0), 5)} NEAR for covering FT storage registrations.`);
   }
 
   console.log(chalk.cyan`[!] ${nearAPI.utils.format.formatNearAmount(operationalFeeNear.toFixed(0), 5)} NEAR for covering operational costs for stopping streams and withdrawal.`);
@@ -328,7 +328,7 @@ async function createStorageDeposits(account, accountIdTickerPairsSet) {
 
   await Promise.all(Array.from(accountIdTickerPairsSet).map(async (accountIdTickerPair) => {
     const [actorId, tokenContractId] = accountIdTickerPair.split('|');
-    const depositAmount = nearAPI.utils.format.parseNearAmount('0.00125'); // account creation costs 0.00125 NEAR for storage
+    const depositAmount = nearAPI.utils.format.parseNearAmount('0.0125'); // account creation costs up to 0.0125 NEAR for storage
 
     const actions = [nearAPI.transactions.functionCall(
       'storage_deposit',
